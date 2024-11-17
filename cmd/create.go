@@ -58,7 +58,7 @@ func runCreate(_ *cobra.Command, _ []string) error {
 		fmt.Printf("output database file %s has been removed\n", createOpts.database)
 	}
 
-	db, err := gorm.Open(sqlite.Open(createOpts.database), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(createOpts.database), &gorm.Config{Logger: &database.CustomLogger{}})
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
@@ -127,14 +127,20 @@ func ParseLine(line string, pointRegex, japaneseRegex, levelRegex, partOfSpeechR
 		if partOfSpeech != "" {
 			return nil, cachedLevel, partOfSpeech, nil
 		}
+		// ignore
+		return nil, cachedLevel, cachedPartOfSpeech, nil
 	}
 	japanese := captureGroups["japanese"]
+	if (japanese == "") {
+		return nil, cachedLevel, cachedPartOfSpeech, nil
+	}
 	english := captureGroups["english"]
 	japaneseCaptureGroups := regexhelper.FindNamedGroupMatchedStrings(japaneseRegex, japanese)
 	kanji := japaneseCaptureGroups["kanji"]
 	kana := japaneseCaptureGroups["kana"]
 	if kanji == "" && kana == "" {
-		return nil, cachedLevel, cachedPartOfSpeech, nil
+		// assuming japanese is katakana
+		kana = japanese
 	}
 
 	entry := &database.Entry{

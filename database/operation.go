@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -26,11 +27,11 @@ func (j *StringArray) Scan(value interface{}) error {
 }
 
 func Upsert(db *gorm.DB, entry *Entry) error {
-	fmt.Printf("upserting entry %v\n", entry)
+	fmt.Printf("upserting entry %s %s %v %v\n", entry.Kanji, entry.Kana, entry.English, entry.Labels)
 
 	var existing Entry
 	if err := db.Where("kanji = ?", entry.Kanji).First(&existing).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return db.Create(entry).Error
 		}
 		return err

@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/alexhokl/japanese-notes-parser/cmd"
+	"github.com/alexhokl/japanese-notes-parser/database"
 	"github.com/alexhokl/japanese-notes-parser/parser"
 )
 
@@ -98,3 +100,101 @@ func TestParseHeaderLine(t *testing.T) {
 		})
 	}
 }
+
+func TestParseLine(t *testing.T) {
+	pointRegex, _ := regexp.Compile(`- (?P<japanese>\W+) - (?P<english>(.*))`)
+	japaneseRegex, _ := regexp.Compile(`(?P<kanji>\W+) \((?P<kana>\W+)\)`)
+	levelRegex, _ := regexp.Compile(`^## (?P<level>\w+)`)
+	partOfSpeechRegex, _ := regexp.Compile(`^### (?P<partOfSpeech>\w+)`)
+
+	tests := []struct {
+		input                string
+		cachedLevel          string
+		cachedPartOfSpeech   string
+		expectedEntry        *database.Entry
+		expectedLevel        string
+		expectedPartOfSpeech string
+		expectedError        error
+	}{
+		{
+			input:                "- 階 (かい) - floor",
+			cachedLevel:          "N1",
+			cachedPartOfSpeech:   "Nouns",
+			expectedEntry:        &database.Entry{Kanji: "階", Kana: "かい", English: []string{"floor"}},
+			expectedLevel:        "N1",
+			expectedPartOfSpeech: "Nouns",
+			expectedError:        nil,
+		},
+		{
+			input:                "- インフォメーション - information",
+			cachedLevel:          "N1",
+			cachedPartOfSpeech:   "Nouns",
+			expectedEntry:        &database.Entry{Kanji: "", Kana: "インフォメーション", English: []string{"information"}},
+			expectedLevel:        "N1",
+			expectedPartOfSpeech: "Nouns",
+			expectedError:        nil,
+		},
+		{
+			input:                "",
+			cachedLevel:          "N5",
+			cachedPartOfSpeech:   "Nouns",
+			expectedEntry:        nil,
+			expectedLevel:        "N5",
+			expectedPartOfSpeech: "Nouns",
+			expectedError:        nil,
+		},
+		{
+			input:                "## N4",
+			cachedLevel:          "N5",
+			cachedPartOfSpeech:   "Nouns",
+			expectedEntry:        nil,
+			expectedLevel:        "N4",
+			expectedPartOfSpeech: "Nouns",
+			expectedError:        nil,
+		},
+		{
+			input:                "### Adjectives",
+			cachedLevel:          "N5",
+			cachedPartOfSpeech:   "Nouns",
+			expectedEntry:        nil,
+			expectedLevel:        "N5",
+			expectedPartOfSpeech: "Adjectives",
+			expectedError:        nil,
+		},
+	}
+
+	for _, test := range tests {
+		testName := fmt.Sprintf("input=%s", test.input)
+		t.Run(testName, func(t *testing.T) {
+			actualEntry, actualLevel, actualPartOfSpeech, err := cmd.ParseLine(test.input, pointRegex, japaneseRegex, levelRegex, partOfSpeechRegex, test.cachedLevel, test.cachedPartOfSpeech)
+			if actualLevel != test.expectedLevel {
+				t.Errorf("expected level %s, got %s", test.expectedLevel, actualLevel)
+			}
+			if actualPartOfSpeech != test.expectedPartOfSpeech {
+				t.Errorf("expected part of speech %s, got %s", test.expectedPartOfSpeech, actualPartOfSpeech)
+			}
+			if err != test.expectedError {
+				t.Errorf("expected error %v, got %v", test.expectedError, err)
+			}
+			if test.expectedEntry != nil {
+				if actualEntry.Kanji != test.expectedEntry.Kanji {
+					t.Errorf("expected kanji %s, got %s", test.expectedEntry.Kanji, actualEntry.Kanji)
+				}
+				if actualEntry.Kana != test.expectedEntry.Kana {
+					t.Errorf("expected kana %s, got %s", test.expectedEntry.Kana, actualEntry.Kana)
+				}
+				if len(actualEntry.English) != len(test.expectedEntry.English) {
+					t.Errorf("expected english entries of %v, got %v", len(test.expectedEntry.English), len(actualEntry.English))
+				}
+				for i, v := range test.expectedEntry.English {
+					if actualEntry.English[i] != v {
+						t.Errorf("expected english %s, got %s", v, actualEntry.English[i])
+					}
+				}
+			}
+		})
+	}
+}
+
+// - 階 (かい) - floor
+// - インフォメーション - information
