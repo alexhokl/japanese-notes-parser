@@ -48,7 +48,7 @@ func TestParseEnglish(t *testing.T) {
 
 func TestParseHeaderLine(t *testing.T) {
 	levelRegex, _ := regexp.Compile(`^## (?P<level>\w+)`)
-	partOfSpeechRegex, _ := regexp.Compile(`^### (?P<partOfSpeech>\w+)`)
+	partOfSpeechRegex, _ := regexp.Compile(`^### (?P<partOfSpeech>(\w+\s\(\w+\)|\w+))`)
 
 	tests := []struct {
 		input                string
@@ -68,6 +68,12 @@ func TestParseHeaderLine(t *testing.T) {
 			input:                "### Nouns",
 			expectedLevel:        "",
 			expectedPartOfSpeech: "Nouns",
+			expectedError:        nil,
+		},
+		{
+			input:                "### Nouns (position)",
+			expectedLevel:        "",
+			expectedPartOfSpeech: "Nouns (position)",
 			expectedError:        nil,
 		},
 		{

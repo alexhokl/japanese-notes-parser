@@ -85,7 +85,7 @@ func runCreate(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)
 	}
-	partOfSpeechRegex, err := regexp.Compile(`^### (?P<partOfSpeech>\w+)`)
+	partOfSpeechRegex, err := regexp.Compile(`^### (?P<partOfSpeech>(\w+\s\(\w+\)|\w+))`)
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)
 	}
