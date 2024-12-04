@@ -167,6 +167,15 @@ func TestParseLine(t *testing.T) {
 			expectedPartOfSpeech: "Adjectives",
 			expectedError:        nil,
 		},
+		{
+			input:                "- でも - but",
+			cachedLevel:          "N5",
+			cachedPartOfSpeech:   "Adverbs",
+			expectedEntry:        &database.Entry{Kanji: "", Kana: "でも", English: []string{"but"}},
+			expectedLevel:        "N5",
+			expectedPartOfSpeech: "Adverbs",
+			expectedError:        nil,
+		},
 	}
 
 	for _, test := range tests {

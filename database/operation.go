@@ -27,16 +27,27 @@ func (j *StringArray) Scan(value interface{}) error {
 }
 
 func Upsert(db *gorm.DB, entry *Entry) error {
-	fmt.Printf("upserting entry %s %s %v %v\n", entry.Kanji, entry.Kana, entry.English, entry.Labels)
-
 	var existing Entry
-	if err := db.Where("kanji = ?", entry.Kanji).First(&existing).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return db.Create(entry).Error
+
+	if entry.Kanji == "" {
+		fmt.Printf("upserting entry %s %v %v\n", entry.Kana, entry.English, entry.Labels)
+		if err := db.Where("kana = ?", entry.Kana).First(&existing).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return db.Create(entry).Error
+			}
+			return err
 		}
-		return err
+		existing.Kana = entry.Kana
+	} else {
+		fmt.Printf("upserting entry %s %s %v %v\n", entry.Kanji, entry.Kana, entry.English, entry.Labels)
+		if err := db.Where("kanji = ?", entry.Kanji).First(&existing).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return db.Create(entry).Error
+			}
+			return err
+		}
 	}
-	existing.Kana = entry.Kana
+
 	existing.English = entry.English
 	existing.Labels = entry.Labels
 	return db.Save(&existing).Error

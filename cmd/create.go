@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/alexhokl/helper/iohelper"
 	"github.com/alexhokl/helper/regexhelper"
@@ -136,8 +137,8 @@ func ParseLine(line string, pointRegex, japaneseRegex, levelRegex, partOfSpeechR
 	}
 	english := captureGroups["english"]
 	japaneseCaptureGroups := regexhelper.FindNamedGroupMatchedStrings(japaneseRegex, japanese)
-	kanji := japaneseCaptureGroups["kanji"]
-	kana := japaneseCaptureGroups["kana"]
+	kanji := strings.TrimSpace(japaneseCaptureGroups["kanji"])
+	kana := strings.TrimSpace(japaneseCaptureGroups["kana"])
 	if kanji == "" && kana == "" {
 		// assuming japanese is katakana
 		kana = japanese
