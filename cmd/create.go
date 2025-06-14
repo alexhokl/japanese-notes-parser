@@ -86,12 +86,12 @@ func runCreate(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)
 	}
-	partOfSpeechRegex, err := regexp.Compile(`^### (?P<partOfSpeech>(\w+\s\(\w+\)|\w+))`)
+	partOfSpeechRegex, err := regexp.Compile(`^### (?P<partOfSpeech>(\w+\s\(.*\)|\w+))`)
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %w", err)
 	}
 
-	// TODO: bulk upset with transaction
+	// TODO: bulk upsert with transaction
 	cachedLevel := ""
 	cachedPartOfSpeech := ""
 	for _, line := range lines {
@@ -132,7 +132,7 @@ func ParseLine(line string, pointRegex, japaneseRegex, levelRegex, partOfSpeechR
 		return nil, cachedLevel, cachedPartOfSpeech, nil
 	}
 	japanese := captureGroups["japanese"]
-	if (japanese == "") {
+	if japanese == "" {
 		return nil, cachedLevel, cachedPartOfSpeech, nil
 	}
 	english := captureGroups["english"]
@@ -153,4 +153,3 @@ func ParseLine(line string, pointRegex, japaneseRegex, levelRegex, partOfSpeechR
 
 	return entry, cachedLevel, cachedPartOfSpeech, nil
 }
-
