@@ -53,6 +53,27 @@ func Upsert(db *gorm.DB, entry *Entry) error {
 	return db.Save(&existing).Error
 }
 
+func ListPartsOfSpeech(db *gorm.DB) ([]string, error) {
+	var entries []Entry
+	if err := db.Find(&entries).Error; err != nil {
+		return nil, fmt.Errorf("failed to list parts of speech: %w", err)
+	}
+
+	partOfSpeechMap := make(map[string]struct{})
+	for _, entry := range entries {
+		for _, label := range entry.Labels {
+			partOfSpeechMap[label] = struct{}{}
+		}
+	}
+
+	var partOfSpeechList []string
+	for partOfSpeech := range partOfSpeechMap {
+		partOfSpeechList = append(partOfSpeechList, partOfSpeech)
+	}
+
+	return partOfSpeechList, nil
+}
+
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(&Entry{})
 }
