@@ -80,6 +80,24 @@ func TestParseHeaderLine(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
+			input:                "### Auxiliary verbs",
+			expectedLevel:        "",
+			expectedPartOfSpeech: "Auxiliary verbs",
+			expectedError:        nil,
+		},
+		{
+			input:                "### する verbs",
+			expectedLevel:        "",
+			expectedPartOfSpeech: "する verbs",
+			expectedError:        nil,
+		},
+		{
+			input:                "### 連体詞",
+			expectedLevel:        "",
+			expectedPartOfSpeech: "連体詞",
+			expectedError:        nil,
+		},
+		{
 			input:                "# Vocabulary",
 			expectedLevel:        "",
 			expectedPartOfSpeech: "",
