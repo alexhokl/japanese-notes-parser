@@ -47,9 +47,6 @@ func TestParseEnglish(t *testing.T) {
 }
 
 func TestParseHeaderLine(t *testing.T) {
-	levelRegex, _ := regexp.Compile(`^## (?P<level>\w+)`)
-	partOfSpeechRegex, _ := regexp.Compile(`^### (?P<partOfSpeech>(\w+\s\(.*\)|\w+))`)
-
 	tests := []struct {
 		input                string
 		levelRegex           *regexp.Regexp
@@ -99,7 +96,7 @@ func TestParseHeaderLine(t *testing.T) {
 	for _, test := range tests {
 		testName := fmt.Sprintf("input=%s", test.input)
 		t.Run(testName, func(t *testing.T) {
-			actualLevel, actualPartOfSpeech, err := parser.ParseHeaderLine(test.input, levelRegex, partOfSpeechRegex)
+			actualLevel, actualPartOfSpeech, err := parser.ParseHeaderLine(test.input, parser.LevelRegex, parser.PartOfSpeechRegex)
 			if actualLevel != test.expectedLevel {
 				t.Errorf("expected %s, got %s", test.expectedLevel, actualLevel)
 			}
@@ -114,11 +111,6 @@ func TestParseHeaderLine(t *testing.T) {
 }
 
 func TestParseLine(t *testing.T) {
-	pointRegex, _ := regexp.Compile(`- (?P<japanese>\W+) - (?P<english>(.*))`)
-	japaneseRegex, _ := regexp.Compile(`(?P<kanji>\W+) \((?P<kana>\W+)\)`)
-	levelRegex, _ := regexp.Compile(`^## (?P<level>\w+)`)
-	partOfSpeechRegex, _ := regexp.Compile(`^### (?P<partOfSpeech>\w+)`)
-
 	tests := []struct {
 		input                string
 		cachedLevel          string
@@ -187,7 +179,15 @@ func TestParseLine(t *testing.T) {
 	for _, test := range tests {
 		testName := fmt.Sprintf("input=%s", test.input)
 		t.Run(testName, func(t *testing.T) {
-			actualEntry, actualLevel, actualPartOfSpeech, err := cmd.ParseLine(test.input, pointRegex, japaneseRegex, levelRegex, partOfSpeechRegex, test.cachedLevel, test.cachedPartOfSpeech)
+			actualEntry, actualLevel, actualPartOfSpeech, err := cmd.ParseLine(
+				test.input,
+				parser.PointRegex,
+				parser.JapaneseRegex,
+				parser.LevelRegex,
+				parser.PartOfSpeechRegex,
+				test.cachedLevel,
+				test.cachedPartOfSpeech,
+			)
 			if actualLevel != test.expectedLevel {
 				t.Errorf("expected level %s, got %s", test.expectedLevel, actualLevel)
 			}

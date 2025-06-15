@@ -74,28 +74,19 @@ func runCreate(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to read lines from file: %w", err)
 	}
 
-	pointRegex, err := regexp.Compile(`- (?P<japanese>\W+) - (?P<english>(.*))`)
-	if err != nil {
-		return fmt.Errorf("failed to compile regex: %w", err)
-	}
-	japaneseRegex, err := regexp.Compile(`(?P<kanji>\W+) \((?P<kana>\W+)\)`)
-	if err != nil {
-		return fmt.Errorf("failed to compile regex: %w", err)
-	}
-	levelRegex, err := regexp.Compile(`^## (?P<level>\w+)`)
-	if err != nil {
-		return fmt.Errorf("failed to compile regex: %w", err)
-	}
-	partOfSpeechRegex, err := regexp.Compile(`^### (?P<partOfSpeech>(\w+\s\(.*\)|\w+))`)
-	if err != nil {
-		return fmt.Errorf("failed to compile regex: %w", err)
-	}
-
 	// TODO: bulk upsert with transaction
 	cachedLevel := ""
 	cachedPartOfSpeech := ""
 	for _, line := range lines {
-		entry, level, partOfSpeech, err := ParseLine(line, pointRegex, japaneseRegex, levelRegex, partOfSpeechRegex, cachedLevel, cachedPartOfSpeech)
+		entry, level, partOfSpeech, err := ParseLine(
+			line,
+			parser.PointRegex,
+			parser.JapaneseRegex,
+			parser.LevelRegex,
+			parser.PartOfSpeechRegex,
+			cachedLevel,
+			cachedPartOfSpeech,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to parse line: %w", err)
 		}
