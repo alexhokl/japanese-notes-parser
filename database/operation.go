@@ -39,7 +39,7 @@ func Upsert(db *gorm.DB, entry *Entry) error {
 		}
 		existing.Kana = entry.Kana
 	} else {
-		fmt.Printf("upserting entry %s %s %v %v\n", entry.Kanji, entry.Kana, entry.English, entry.Labels)
+		fmt.Printf("upserting entry %s %s %v %v %s\n", entry.Kanji, entry.Kana, entry.English, entry.Labels, entry.LinkedKanji)
 		if err := db.Where("kanji = ?", entry.Kanji).First(&existing).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return db.Create(entry).Error

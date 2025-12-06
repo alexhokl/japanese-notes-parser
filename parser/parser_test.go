@@ -133,6 +133,7 @@ func TestParseLine(t *testing.T) {
 		input                string
 		cachedLevel          string
 		cachedPartOfSpeech   string
+		previousKanji        string
 		expectedEntry        *database.Entry
 		expectedLevel        string
 		expectedPartOfSpeech string
@@ -142,7 +143,8 @@ func TestParseLine(t *testing.T) {
 			input:                "- 階 (かい) - floor",
 			cachedLevel:          "N1",
 			cachedPartOfSpeech:   "Nouns",
-			expectedEntry:        &database.Entry{Kanji: "階", Kana: "かい", English: []string{"floor"}},
+			previousKanji:        "",
+			expectedEntry:        &database.Entry{Kanji: "階", Kana: "かい", English: []string{"floor"}, LinkedKanji: ""},
 			expectedLevel:        "N1",
 			expectedPartOfSpeech: "Nouns",
 			expectedError:        nil,
@@ -151,7 +153,8 @@ func TestParseLine(t *testing.T) {
 			input:                "- インフォメーション - information",
 			cachedLevel:          "N1",
 			cachedPartOfSpeech:   "Nouns",
-			expectedEntry:        &database.Entry{Kanji: "", Kana: "インフォメーション", English: []string{"information"}},
+			previousKanji:        "",
+			expectedEntry:        &database.Entry{Kanji: "", Kana: "インフォメーション", English: []string{"information"}, LinkedKanji: ""},
 			expectedLevel:        "N1",
 			expectedPartOfSpeech: "Nouns",
 			expectedError:        nil,
@@ -160,6 +163,7 @@ func TestParseLine(t *testing.T) {
 			input:                "",
 			cachedLevel:          "N5",
 			cachedPartOfSpeech:   "Nouns",
+			previousKanji:        "",
 			expectedEntry:        nil,
 			expectedLevel:        "N5",
 			expectedPartOfSpeech: "Nouns",
@@ -169,6 +173,7 @@ func TestParseLine(t *testing.T) {
 			input:                "## N4",
 			cachedLevel:          "N5",
 			cachedPartOfSpeech:   "Nouns",
+			previousKanji:        "",
 			expectedEntry:        nil,
 			expectedLevel:        "N4",
 			expectedPartOfSpeech: "Nouns",
@@ -178,6 +183,7 @@ func TestParseLine(t *testing.T) {
 			input:                "### Adjectives",
 			cachedLevel:          "N5",
 			cachedPartOfSpeech:   "Nouns",
+			previousKanji:        "",
 			expectedEntry:        nil,
 			expectedLevel:        "N5",
 			expectedPartOfSpeech: "Adjectives",
@@ -187,9 +193,30 @@ func TestParseLine(t *testing.T) {
 			input:                "- でも - but",
 			cachedLevel:          "N5",
 			cachedPartOfSpeech:   "Adverbs",
-			expectedEntry:        &database.Entry{Kanji: "", Kana: "でも", English: []string{"but"}},
+			previousKanji:        "",
+			expectedEntry:        &database.Entry{Kanji: "", Kana: "でも", English: []string{"but"}, LinkedKanji: ""},
 			expectedLevel:        "N5",
 			expectedPartOfSpeech: "Adverbs",
+			expectedError:        nil,
+		},
+		{
+			input:                "  * 出す (だす) - to take out",
+			cachedLevel:          "N5",
+			cachedPartOfSpeech:   "verb pair",
+			previousKanji:        "でる",
+			expectedEntry:        &database.Entry{Kanji: "出す", Kana: "だす", English: []string{"to take out"}, LinkedKanji: "でる"},
+			expectedLevel:        "N5",
+			expectedPartOfSpeech: "verb pair",
+			expectedError:        nil,
+		},
+		{
+			input:                "    to take out",
+			cachedLevel:          "N5",
+			cachedPartOfSpeech:   "verb pair",
+			previousKanji:        "",
+			expectedEntry:        nil,
+			expectedLevel:        "N5",
+			expectedPartOfSpeech: "verb pair",
 			expectedError:        nil,
 		},
 	}
@@ -200,11 +227,13 @@ func TestParseLine(t *testing.T) {
 			actualEntry, actualLevel, actualPartOfSpeech, err := cmd.ParseLine(
 				test.input,
 				parser.PointRegex,
+				parser.SubPointRegex,
 				parser.JapaneseRegex,
 				parser.LevelRegex,
 				parser.PartOfSpeechRegex,
 				test.cachedLevel,
 				test.cachedPartOfSpeech,
+				test.previousKanji,
 			)
 			if actualLevel != test.expectedLevel {
 				t.Errorf("expected level %s, got %s", test.expectedLevel, actualLevel)
@@ -216,6 +245,10 @@ func TestParseLine(t *testing.T) {
 				t.Errorf("expected error %v, got %v", test.expectedError, err)
 			}
 			if test.expectedEntry != nil {
+				if actualEntry == nil {
+					t.Errorf("expected entry %v, got nil", test.expectedEntry)
+					return
+				}
 				if actualEntry.Kanji != test.expectedEntry.Kanji {
 					t.Errorf("expected kanji %s, got %s", test.expectedEntry.Kanji, actualEntry.Kanji)
 				}
@@ -224,6 +257,9 @@ func TestParseLine(t *testing.T) {
 				}
 				if len(actualEntry.English) != len(test.expectedEntry.English) {
 					t.Errorf("expected english entries of %v, got %v", len(test.expectedEntry.English), len(actualEntry.English))
+				}
+				if actualEntry.LinkedKanji != test.expectedEntry.LinkedKanji {
+					t.Errorf("expected linked kanji %s, got %s", test.expectedEntry.LinkedKanji, actualEntry.LinkedKanji)
 				}
 				for i, v := range test.expectedEntry.English {
 					if actualEntry.English[i] != v {
