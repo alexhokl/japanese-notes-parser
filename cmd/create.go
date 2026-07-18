@@ -59,7 +59,7 @@ func runCreate(_ *cobra.Command, _ []string) error {
 		fmt.Printf("output database file %s has been removed\n", createOpts.database)
 	}
 
-	db, err := gorm.Open(sqlite.Open(createOpts.database), &gorm.Config{Logger: &database.CustomLogger{}})
+	db, err := gorm.Open(sqlite.Open(createOpts.database), &gorm.Config{Logger: database.NewCustomLogger()})
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}

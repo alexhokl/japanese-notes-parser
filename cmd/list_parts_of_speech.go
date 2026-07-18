@@ -39,7 +39,7 @@ func runListPartsOfSpeech(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("specified database does not exist")
 	}
 
-	db, err := gorm.Open(sqlite.Open(listPartsOfSpeechOpts.database), &gorm.Config{Logger: &database.CustomLogger{}})
+	db, err := gorm.Open(sqlite.Open(listPartsOfSpeechOpts.database), &gorm.Config{Logger: database.NewCustomLogger()})
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}

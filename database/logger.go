@@ -12,6 +12,10 @@ type CustomLogger struct {
     logger.Interface
 }
 
+func NewCustomLogger() *CustomLogger {
+    return &CustomLogger{logger.Default}
+}
+
 func (c *CustomLogger) LogMode(level logger.LogLevel) logger.Interface {
     return &CustomLogger{c.Interface.LogMode(level)}
 }
