@@ -2,6 +2,7 @@ version: "3"
 
 env:
   APP_NAME: japanese-notes-parser
+  TAG_NAME: latest
 
 tasks:
   build:
@@ -37,3 +38,25 @@ tasks:
   completion-linux:
     desc: Generate bash completion and save configuration directory
     cmd: $APP_NAME completion bash | sudo tee /etc/bash_completion.d/$APP_NAME
+
+  image:
+    desc: Build a Docker image
+    preconditions:
+      - test -f Dockerfile
+      - sh: docker version
+    cmd: docker build -t asia-east1-docker.pkg.dev/craffy/public/japanese-notes-parser:$TAG_NAME .
+
+  push:
+    desc: Docker push
+    cmd: docker push asia-east1-docker.pkg.dev/craffy/public/japanese-notes-parser:$TAG_NAME .
+
+  tag:
+    desc: Create a new git tag with incremented patch version (1.0.x)
+    silent: true
+    cmds:
+      - |
+        LATEST=$(git tag --sort=-version:refname | grep -E '^1\.0\.[0-9]+$' | head -1)
+        PATCH=$(echo "$LATEST" | cut -d. -f3)
+        NEW_TAG="1.0.$((PATCH + 1))"
+        git tag "$NEW_TAG"
+        echo "Created tag $NEW_TAG"
