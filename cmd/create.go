@@ -74,12 +74,30 @@ func runCreate(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to read lines from file: %w", err)
 	}
 
+	entries, err := ParseLines(lines)
+	if err != nil {
+		return err
+	}
+
 	// TODO: bulk upsert with transaction
+	for _, entry := range entries {
+		if err := database.Upsert(db, entry); err != nil {
+			return fmt.Errorf("failed to upsert entry: %w", err)
+		}
+	}
+
+	fmt.Println("database created")
+	return nil
+}
+
+func ParseLines(lines []string) ([]*database.Entry, error) {
 	cachedLevel := ""
 	cachedPartOfSpeech := ""
 	previousKanji := ""
+	var entries []*database.Entry
+	var lastEntry *database.Entry
 	for _, line := range lines {
-		entry, level, partOfSpeech, err := ParseLine(
+		entry, level, partOfSpeech, continuation, err := ParseLine(
 			line,
 			parser.PointRegex,
 			parser.SubPointRegex,
@@ -91,26 +109,31 @@ func runCreate(_ *cobra.Command, _ []string) error {
 			previousKanji,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to parse line: %w", err)
+			return nil, fmt.Errorf("failed to parse line: %w", err)
+		}
+		if continuation != "" && lastEntry != nil {
+			if len(lastEntry.English) == 0 {
+				lastEntry.English = []string{continuation}
+			} else {
+				lastEntry.English[len(lastEntry.English)-1] = lastEntry.English[len(lastEntry.English)-1] + " " + continuation
+			}
+			continue
 		}
 		if entry == nil {
 			cachedLevel = level
 			cachedPartOfSpeech = partOfSpeech
 			previousKanji = ""
+			lastEntry = nil
 			continue
 		}
 		previousKanji = entry.Kanji
-
-		if err = database.Upsert(db, entry); err != nil {
-			return fmt.Errorf("failed to upsert entry: %w", err)
-		}
+		entries = append(entries, entry)
+		lastEntry = entry
 	}
-
-	fmt.Println("database created")
-	return nil
+	return entries, nil
 }
 
-func ParseLine(line string, pointRegex, subPointRegex, japaneseRegex, levelRegex, partOfSpeechRegex *regexp.Regexp, cachedLevel string, cachedPartOfSpeech string, previousKanji string) (*database.Entry, string, string, error) {
+func ParseLine(line string, pointRegex, subPointRegex, japaneseRegex, levelRegex, partOfSpeechRegex *regexp.Regexp, cachedLevel string, cachedPartOfSpeech string, previousKanji string) (*database.Entry, string, string, string, error) {
 	isSubPoint := false
 	captureGroups := regexhelper.FindNamedGroupMatchedStrings(pointRegex, line)
 	if len(captureGroups) == 0 {
@@ -121,23 +144,29 @@ func ParseLine(line string, pointRegex, subPointRegex, japaneseRegex, levelRegex
 			level, partOfSpeech, err := parser.ParseHeaderLine(line, levelRegex, partOfSpeechRegex)
 			if err != nil {
 				// ignore
-				return nil, cachedLevel, cachedPartOfSpeech, nil
+				return nil, cachedLevel, cachedPartOfSpeech, "", nil
 			}
 			if level != "" {
-				return nil, level, cachedPartOfSpeech, nil
+				return nil, level, cachedPartOfSpeech, "", nil
 			}
 			if partOfSpeech != "" {
-				return nil, cachedLevel, partOfSpeech, nil
+				return nil, cachedLevel, partOfSpeech, "", nil
 			}
-			// ignore
-			return nil, cachedLevel, cachedPartOfSpeech, nil
+			// no regex matched: treat non-empty line as a continuation of
+			// the previous entry's English text. Empty/whitespace-only
+			// lines are ignored.
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "" {
+				return nil, cachedLevel, cachedPartOfSpeech, "", nil
+			}
+			return nil, cachedLevel, cachedPartOfSpeech, trimmed, nil
 		}
 		isSubPoint = true
 		captureGroups = subPointCaptureGroups
 	}
 	japanese := captureGroups["japanese"]
 	if japanese == "" {
-		return nil, cachedLevel, cachedPartOfSpeech, nil
+		return nil, cachedLevel, cachedPartOfSpeech, "", nil
 	}
 	english := captureGroups["english"]
 	japaneseCaptureGroups := regexhelper.FindNamedGroupMatchedStrings(japaneseRegex, japanese)
@@ -161,5 +190,5 @@ func ParseLine(line string, pointRegex, subPointRegex, japaneseRegex, levelRegex
 		LinkedKanji: linkedKanji,
 	}
 
-	return entry, cachedLevel, cachedPartOfSpeech, nil
+	return entry, cachedLevel, cachedPartOfSpeech, "", nil
 }
